@@ -1,5 +1,7 @@
 from flask import Flask
-from flask import request, make_response, jsonify
+from flask import request
+from flask_restful import Resource, Api
+
 
 User = {
     'Y0ZfDzTm1n': ['UserManager', 'Jenna'],
@@ -20,6 +22,7 @@ roles = {
 }
 
 app = Flask(__name__)
+api = Api(app)
 
 
 def verify_auth_token(auth_header):
@@ -32,51 +35,55 @@ def verify_auth_token(auth_header):
         return None
 
 
-@app.route('/user/', methods=['GET', 'POST'])
-def fetch_user():
-    auth_header = request.headers.get('Authorization')
+class Users(Resource):
 
-    user = verify_auth_token(auth_header)
+    def get(self):
+        auth_header = request.headers.get('Authorization')
 
-    if user is not None:
-            s = list(find_role(roles, user[1][0]))
-            return user_response(user[0], s)
-    else:
-        return 'Invalid token. Please log in again.'
+        user = verify_auth_token(auth_header)
 
+        if user is not None:
+            s = list(self.find_role(roles, user[1][0]))
+            return self.user_response(user[0], s)
+        else:
+            return 'Invalid token. Please log in again.'
 
-def user_response(token, lis):
-    balance = 1000
+    def user_response(self, token, lis):
+        balance = 1000
 
-    if 'WalletUser' in lis[0]:
-        responseObject = {
-            'status': 'success',
-            'data': {
-                'username': User[token][1],
-                'balance': balance
+        if 'WalletUser' in lis[0]:
+            responseObject = {
+                'status': 'success',
+                'data': {
+                    'username': User[token][1],
+                    'balance': balance
 
+                }
             }
-        }
-        return make_response(jsonify(responseObject)), 200
+            return responseObject, 200
 
-    else:
-        responseObject = {
-            'status': 'success',
-            'data': {
-                'username': User[token][1]
+        else:
+            responseObject = {
+                'status': 'success',
+                'data': {
+                    'username': User[token][1]
 
+                }
             }
-        }
-        return make_response(jsonify(responseObject)), 200
+            return responseObject, 200
+
+    def find_role(self, node, kv):
+        if isinstance(node, dict):
+            if kv in node:
+                yield node[kv]
+            for j in node.values():
+                for x in self.find_role(j, kv):
+                    yield x
 
 
-def find_role(node, kv):
-   if isinstance(node, dict):
-        if kv in node:
-            yield node[kv]
-        for j in node.values():
-            for x in find_role(j, kv):
-                yield x
+
+api.add_resource(Users, '/users')  # '/users' is our entry point for Users
+
 
 
 if __name__ == '__main__':
