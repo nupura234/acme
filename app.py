@@ -1,10 +1,10 @@
 from flask import Flask
+from flask import request, make_response, jsonify
 
-valid_tokens = {
+User = {
     'Y0ZfDzTm1n': ['UserManager', 'Jenna'],
     '9uHSi2hnKD': ['AppUser', 'Robin'],
 }
-
 
 roles = {
     'Administrator': {
@@ -22,57 +22,60 @@ roles = {
 app = Flask(__name__)
 
 
+def verify_auth_token(auth_header):
+    try:
+        if auth_header:
+            auth_token = auth_header.split(" ")[1]
+            user = User[auth_token]
+            return auth_token, user
+    except:
+        return None
+
+
 @app.route('/user/', methods=['GET', 'POST'])
 def fetch_user():
-    token = '9uHSi2hnKD'
+    auth_header = request.headers.get('Authorization')
 
-    role = get_role(token)
+    user = verify_auth_token(auth_header)
 
-    if role is not None:
-        s = list(findkeys(roles, role))
-
-        return check_role(token, s)
-    # return "Hello World!"
-
-
-def get_role(token):
-    if token in valid_tokens:
-        role = valid_tokens[token][0]
-        return role
+    if user is not None:
+            s = list(find_role(roles, user[1][0]))
+            return user_response(user[0], s)
     else:
-        return None
+        return 'Invalid token. Please log in again.'
 
 
-def get_name(token):
-    if token in valid_tokens:
-        name = valid_tokens[token][1]
-        return name
-    else:
-        return None
-
-
-def check_role(token, lis):
-    name = get_name(token)
+def user_response(token, lis):
+    balance = 1000
 
     if 'WalletUser' in lis[0]:
+        responseObject = {
+            'status': 'success',
+            'data': {
+                'username': User[token][1],
+                'balance': balance
 
-        balance = 1000
-        return "User name is" + " " + name + " " + "and the balance is " + "" + "$" + str(balance)
+            }
+        }
+        return make_response(jsonify(responseObject)), 200
 
     else:
-        return "User name is" + " " + name
+        responseObject = {
+            'status': 'success',
+            'data': {
+                'username': User[token][1]
+
+            }
+        }
+        return make_response(jsonify(responseObject)), 200
 
 
-def findkeys(node, kv):
-    if isinstance(node, list):
-        for i in node:
-            for x in findkeys(i, kv):
-                yield x
-    elif isinstance(node, dict):
+def find_role(node, kv):
+   if isinstance(node, dict):
         if kv in node:
             yield node[kv]
         for j in node.values():
-            for x in findkeys(j, kv):
+            for x in find_role(j, kv):
                 yield x
 
 
