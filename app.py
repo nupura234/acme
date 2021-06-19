@@ -2,7 +2,6 @@ from flask import Flask
 from flask import request
 from flask_restful import Resource, Api
 
-
 User = {
     'Y0ZfDzTm1n': ['UserManager', 'Jenna'],
     '9uHSi2hnKD': ['AppUser', 'Robin'],
@@ -81,10 +80,7 @@ class Users(Resource):
                     yield x
 
 
-
-api.add_resource(Users, '/users')  # '/users' is our entry point for Users
-
-
+api.add_resource(Users, '/userdetails')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
